@@ -44,8 +44,8 @@ def process_json(data):
         info = json_data['data']['properties']
         #info['time'] = datetime.fromisoformat(info['time'][:-1]).strftime("%Y-%m-%d %H:%M:%S")
         #info['lastupdate'] = datetime.fromisoformat(info['lastupdate'][:-1]).strftime("%Y-%m-%d %H:%M:%S")
-        info['time'] = datetime.strptime(info['time'][:-1], '%Y-%m-%dT%H:%S.%f')
-        info['lastupdate'] = datetime.strptime(info['lastupdate'][:-1], '%Y-%m-%dT%H:%S.%f')
+        info['time'] = datetime.strptime(info['time'][:19], '%Y-%m-%dT%H:%M:%S')
+        info['lastupdate'] = datetime.strptime(info['lastupdate'][:19], '%Y-%m-%dT%H:%M:%S')
         result = save_data(info)
     except Exception as e:
         print("Unable to process with error:", e)
@@ -54,6 +54,7 @@ async def receive():
     async with websockets.connect(web_socket_url) as ws:
         print("Connected to websockets server...")
         while True:
+            print("Waiting for message")
             res = await ws.recv()
             if res is None:
                 print("Error receiving message")
@@ -66,6 +67,7 @@ async def process_recv():
     while True:
         msg = await queue.get()
         message_count += 1
+        print("Received message on queue:", message_count)
         if msg == last_message:
             queue.task_done()
             continue
