@@ -9,39 +9,8 @@ A summary of the tools currently used by this project follows:
 - AWS RDS
 - AWS EC2
 
-This project centres around the seismic data that is received from the websocket server graciously hosted by www.seismicportal.eu. The data received comes in JSON form, here is an example:
-{"action":"update","data":{
-  "type": "Feature",
-  "geometry": {
-    "type": "Point",
-    "coordinates": [
-      143.2849,
-      -4.0270,
-      -10.0
-    ]
-  },
-  "id": "20240330_0000303",
-  "properties": {
-    "source_id": "1643105",
-    "source_catalog": "EMSC-RTS",
-    "lastupdate": "2024-04-06T03:28:24.385933Z",
-    "time": "2024-03-30T04:09:58.597Z",
-    "flynn_region": "NEW GUINEA, PAPUA NEW GUINEA",
-    "lat": -4.0270,
-    "lon": 143.2849,
-    "depth": 10.0,
-    "evtype": "ke",
-    "auth": "NEIC",
-    "mag": 4.6,
-    "magtype": "mb",
-    "unid": "20240330_0000303"
-  }
-}}
+This project centres around the seismic data that is received from the websocket server graciously hosted by www.seismicportal.eu. The data received comes in JSON form, containing information such as ID, flynn region, timestamps, magnitude, depth, etc. 
 
-New messages are either of action 'update' or 'create' and come with the same list of properties. Of the available features, I chose to keep the following: ID, magnitude, region, latitude, longitude, depth, event time, updated time. With this set I can analyze interesting features like magnitude and depth alongside where they occur on the planet; region is useful for communication as it is much more interesting than latitude and lA summary of the tools currently used by this project follows:
-- Python
-- MySQL
-- AWS RDS
-- AWS EC2ngitude points for the average person; finally, keeping track of the time of the initial events and subsequent updates is important when keeping track of how an event changes through time. For the updates, I only chose to keep track of changes made to depth and magnitude as they are most interesting to me; upon further renditions I will be looking into what other data routinely changes with updates. 
+New messages are either of action 'update' or 'create' and come with the same list of properties. Of the available features, I chose to keep the following: ID, magnitude, region, latitude, longitude, depth, event time, updated time. With this set I can analyze interesting features like magnitude and depth alongside where they occur on the planet; region is useful for communication as it is much more interesting than latitude and longitude points for the average person; finally, keeping track of the time of the initial events and subsequent updates is important when keeping track of how an event changes through time. For the updates, I chose to keep track of changes made to depth and magnitude as they are most interesting to me; upon further renditions I will be looking into what other data routinely changes with updates. 
 
-Regarding software, I decided to focus on Python as it is prominent in the industry. For the ingestion script, a future update will likely have it developed in Go, a language I believe would be great for the engineering task. Nevertheless, the Python script does the job connecting to a websocket server and takes advantage of asynchonous programming to handle all data received. The choice of a relational database is mainly due to the relationship of the events and their updates, as well as the practicality of SQL databases in big data; MySQL as the database of choice is due to popularity and it being open-source. AWS as the cloud platform was chosen in part to previous experience I have with the platform, the free services available (for a time), and the share it holds of the cloud computing market. For data analytics and visualization, I started with the idea of using BI software, such as PowerBI or Tableau, but settled on a custom Python website dashboard as the free versions were not sufficient. To simplify the development of the dashboard I used the Dash framework which provided ample options for visualizations that are easily configured to be very dynamic.
+Regarding software, I decided to focus on Python as it is prominent in the industry. For the ingestion script, a future update will likely have it developed in Go, a language I believe would be great for the engineering task. Nevertheless, the Python script does the job connecting to a websocket server and takes advantage of asynchonous programming to handle all data received. The choice of a relational database is mainly due to the relationship of the events and their updates, as well as the practicality of SQL databases in big data; MySQL as the database of choice is due to popularity and it being open-source. AWS as the cloud platform was chosen in part to previous experience I have with the platform, the free services available (for a time), and the share it holds of the cloud computing market. For data analytics and visualization, I started with the idea of using BI software, such as PowerBI or Tableau, but settled on a custom Python website dashboard as the free versions were not sufficient. To simplify the development of the dashboard I used the Dash framework which provided ample options for visualizations that are easily configured to be very dynamic. Scikit-learn is the primary library for all machine learning algorithms. 
