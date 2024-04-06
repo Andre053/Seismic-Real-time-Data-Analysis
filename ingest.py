@@ -42,8 +42,10 @@ def process_json(data):
         json_data = json.loads(data) 
 
         info = json_data['data']['properties']
-        info['time'] = datetime.fromisoformat(info['time'][:-1]).strftime("%Y-%m-%d %H:%M:%S")
-        info['lastupdate'] = datetime.fromisoformat(info['lastupdate'][:-1]).strftime("%Y-%m-%d %H:%M:%S")
+        #info['time'] = datetime.fromisoformat(info['time'][:-1]).strftime("%Y-%m-%d %H:%M:%S")
+        #info['lastupdate'] = datetime.fromisoformat(info['lastupdate'][:-1]).strftime("%Y-%m-%d %H:%M:%S")
+        info['time'] = datetime.strptime(info['time'][:-1], '%Y-%m-%dT%H:%S.%f')
+        info['lastupdate'] = datetime.strptime(info['lastupdate'][:-1], '%Y-%m-%dT%H:%S.%f')
         result = save_data(info)
     except Exception as e:
         print("Unable to process with error:", e)
