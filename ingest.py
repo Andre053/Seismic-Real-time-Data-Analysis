@@ -64,11 +64,9 @@ async def process_recv():
     while True:
         msg = await queue.get()
         message_count += 1
-        print("Message:", message_count)
         if msg == last_message:
             queue.task_done()
             continue
-
         last_message = msg 
         process_json(msg)
         queue.task_done()

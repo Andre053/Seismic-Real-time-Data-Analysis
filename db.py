@@ -96,7 +96,8 @@ UPDATE seismic_events
 SET
   magnitude = {mag},
   depth = {dep},
-  last_updated = '{upd}'
+  last_updated = '{upd}',
+  update_count = update_count + 1
 WHERE source_id = {sid};
 """
         rows1 = db.execute(cmd1, None)
@@ -115,7 +116,8 @@ INSERT INTO seismic_events (
   depth, 
   event_time, 
   last_updated, 
-  source_id
+  source_id,
+  update_count
 ) VALUES (
   {mag},
   '{reg}',
@@ -124,7 +126,8 @@ INSERT INTO seismic_events (
   {dep},
   '{evt}',
   '{upd}',
-  {sid}
+  {sid},
+  0
 );
 """
         cmd2 = f"""

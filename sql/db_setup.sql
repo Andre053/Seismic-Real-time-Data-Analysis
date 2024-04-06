@@ -9,7 +9,8 @@ CREATE TABLE seismic_events (
   longitude FLOAT,
   depth FLOAT,
   event_time DATETIME,
-  last_updated DATETIME
+  last_updated DATETIME,
+  update_count INT
 );
 
 CREATE TABLE seismic_event_updates (
