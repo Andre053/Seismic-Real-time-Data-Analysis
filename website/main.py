@@ -4,6 +4,7 @@ import plotly.graph_objects as go
 import pandas as pd
 import os
 import numpy as np
+from sklearn.cluster import KMeans
 
 import datetime 
 import pymysql
@@ -57,6 +58,8 @@ class Database:
 app = Dash(__name__)
 sql_data = None
 
+np.random.seed(0)
+
 # LAYOUT
 app.layout = html.Div(children=[
     html.H1(children='Real-time Seismic Date'),
@@ -94,7 +97,9 @@ app.layout = html.Div(children=[
         id='line1',
         figure={'layout': {'title': 'Magnitude x Depth'}}),
 
-    html.Div(id='clicked-data-line1')
+    html.Div(id='clicked-data-line1'),
+    html.H2('Analysis'),
+    dcc.Graph(id='cluster-plot')
 ])
 
 @app.callback(
@@ -130,7 +135,7 @@ def update_metrics(c):
                                 "depth"
                             ])
     metrics = {
-        'Unique Events': df.size,
+        'Unique Events': df.shape[0],
         'Maximum Magnitude': df['magnitude'].max().round(2),
         'Average Magnitude': df['magnitude'].mean().round(2),
         'Maximum Depth': df['depth'].max().round(2),
@@ -234,6 +239,45 @@ def display_click_data(clickData):
         return f"Activity in {data['region']} with a magnitude of {data['magnitude']} and depth of {data['depth']}"
     else:
         return "Click on a point to see the related record."
+
+@app.callback(
+    Output("cluster-plot", "figure"),
+    [Input('sql-data', 'children')])
+def update_cluster(c):
+    global sql_data
+    data = sql_data
+    if data is None:
+        return None
+
+    df = pd.DataFrame(data, columns=[
+                                "magnitude",
+                                "depth"
+                            ])
+    
+    nums = df.to_numpy()
+    kmeans = KMeans(n_clusters=3, random_state=0).fit(nums)
+    labels = kmeans.labels
+
+    scatt = go.Scatter(
+                    x=df["magnitude"], # maybe these should be numpy arrays?
+                    y=df["depth"], 
+                    mode="markers",
+                    marker=dict(
+                        color=labels,
+                        size=10,
+                        lane=dict(width=1, color='black')
+                    ),
+                    name="Clusters"
+    )
+
+    layout = go.Layout(
+        title='Clustering of Magnitude and Depth',
+        xaxis=dict(title='Depth'),
+        yaxis=dict(title='Magnitude'),
+        showlegend=False
+    )
+    fig = go.Figure(data=[scatt], layout=layout)
+    return fig
 
 # RUN IT
 if __name__ == '__main__':
