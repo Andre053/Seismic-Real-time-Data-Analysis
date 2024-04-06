@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 import pandas as pd
 import os
 import numpy as np
-from sklearn.cluster import KMeans
+from sklearn.cluster import KMeans, DBSCAN
 
 import datetime 
 import pymysql
@@ -75,7 +75,7 @@ app.layout = html.Div(children=[
     html.H4("Choose Timeframe"),
     dcc.DatePickerRange(
         id='date-picker-range',
-        min_date_allowed=datetime.date(2024, 4, 1),
+        min_date_allowed=datetime.date(2024, 1, 1),
         max_date_allowed=datetime.date.today(),
         initial_visible_month=datetime.date.today(),
         start_date=datetime.date(2024, 4, 1),
@@ -86,6 +86,8 @@ app.layout = html.Div(children=[
         id='metrics',
         style={'width': '250px'}
     ),
+    html.H4('Event Counts over Time', style={'margin-bottom': '5px'}),
+    dcc.Graph(id='events-over-time', style={'margin-top': '-10px'}),
     html.H2('Explore the Data'),
     dcc.Graph(
         id='world-map',
@@ -99,7 +101,16 @@ app.layout = html.Div(children=[
 
     html.Div(id='clicked-data-line1'),
     html.H2('Analysis'),
-    dcc.Graph(id='cluster-plot')
+    html.H3('K-Means Clustering'),
+    html.H6('Choose number of clusters', style={'margin-bottom': '10px'}),
+    dcc.Input(id='input-clusters', type='number', value=3),
+    html.Div(id='cluster-info', style={'margin-top': '25px'}),
+    dcc.Graph(id='cluster-plot'),
+    html.H3('DBSCAN'),
+    html.H6('Choose eps value', style={'margin-bottom': '10px'}),
+    dcc.Input(id='input-eps', type='number', value=5),
+    html.Div(id='dbscan-info', style={'margin-top': '25px'}),
+    dcc.Graph(id='dbscan-plot')
 ])
 
 @app.callback(
@@ -151,6 +162,49 @@ def update_metrics(c):
         data=table_data
     )
     return table
+
+
+@app.callback(
+    Output('events-over-time', 'figure'),
+    [Input('sql-data', 'children'),
+    Input('date-picker-range', 'start_date'),
+    Input('date-picker-range', 'end_date')]  # You can add an input if needed
+)
+def update_line_graph(c, start, end):
+    # Create line graph trace
+
+    global sql_data
+    data = sql_data
+    
+    if data is None:
+        return None
+
+    df = pd.DataFrame(data, columns=[
+                                "event_time"
+                            ])
+
+    event_counts = df.groupby(pd.Grouper(key='event_time', freq='3h')).size()
+
+    trace = go.Scatter(
+        x=event_counts.index,
+        y=event_counts.values,
+        mode='lines+markers',
+        marker=dict(color='blue'),  # Adjust color if needed
+        name='Counts by Day'
+    )
+
+    # Create layout
+    layout = go.Layout(
+        xaxis=dict(title='Date'),
+        yaxis=dict(title='Events'),
+        hovermode='closest'
+    )
+
+    # Combine trace and layout
+    fig = go.Figure(data=[trace], layout=layout)
+
+    return fig
+
 
 @app.callback(
     Output('world-map', 'figure'),
@@ -240,44 +294,137 @@ def display_click_data(clickData):
     else:
         return "Click on a point to see the related record."
 
+
+
+# MACHINE LEARNING
 @app.callback(
     Output("cluster-plot", "figure"),
-    [Input('sql-data', 'children')])
-def update_cluster(c):
+    Output("cluster-info", "children"),
+    [Input('sql-data', 'children'),
+    Input('input-clusters', 'value')])
+def update_cluster(c, n_clusters):
     global sql_data
     data = sql_data
     if data is None:
         return None
 
+    if n_clusters > len(data):
+        n_clusters = len(data)
+    elif n_clusters < 1:
+        n_clusters = 1
+    # Use dropdown to choose K clusters
     df = pd.DataFrame(data, columns=[
                                 "magnitude",
                                 "depth"
                             ])
     
     nums = df.to_numpy()
-    kmeans = KMeans(n_clusters=3, random_state=0).fit(nums)
-    labels = kmeans.labels
+    kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(nums)
+    labels = kmeans.predict(nums)
+    centroids = np.round(kmeans.cluster_centers_, 2)
 
-    scatt = go.Scatter(
+    cluster_counts = pd.Series(labels).value_counts()
+
+    cluster_info = html.Div([
+        html.Table([
+            html.Tr([html.Th("Cluster"), html.Th("Centroid"), html.Th("Count")]),
+            *[html.Tr([
+                html.Td(f"{i+1}"),
+                html.Td(f"{centroid[0]}, {centroid[1]}"),
+                html.Td(str(count))
+            ], style={'textAlign': 'center'}) for i, (centroid, count) in enumerate(zip(centroids, cluster_counts))]
+        ],
+        style={'border': '1px solid black'})
+    ])
+
+    trace1 = go.Scatter(
                     x=df["magnitude"], # maybe these should be numpy arrays?
                     y=df["depth"], 
                     mode="markers",
                     marker=dict(
                         color=labels,
+                        colorscale='viridis',
                         size=10,
-                        lane=dict(width=1, color='black')
+                        line=dict(width=1, color='black')
                     ),
                     name="Clusters"
     )
+    trace2 = go.Scatter(
+                    x=centroids[:, 0],
+                    y=centroids[:, 1],
+                    mode='markers',
+                    marker=dict(symbol='x', size=10, color='black'),
+                    name='Centroids'
+    )
 
     layout = go.Layout(
-        title='Clustering of Magnitude and Depth',
-        xaxis=dict(title='Depth'),
-        yaxis=dict(title='Magnitude'),
-        showlegend=False
+        title='Clusters and Centroids',
+        xaxis=dict(title='Magnitude'),
+        yaxis=dict(title='Depth'),
+        showlegend=True
     )
-    fig = go.Figure(data=[scatt], layout=layout)
-    return fig
+    fig = go.Figure(data=[trace1, trace2], layout=layout)
+    return fig, cluster_info
+
+
+@app.callback(
+    Output("dbscan-plot", "figure"),
+    Output("dbscan-info", "children"),
+    [Input('sql-data', 'children'),
+    Input('input-eps', 'value')])
+def update_dbscan(c, eps_value):
+    global sql_data
+    data = sql_data
+    if data is None:
+        return None
+
+    # Use dropdown to choose K clusters
+    df = pd.DataFrame(data, columns=[
+                                "magnitude",
+                                "depth"
+                            ])
+    
+    nums = df.to_numpy()
+
+    if eps_value == 0 or eps_value < 0:
+        eps_value = 0.1
+    dbscan = DBSCAN(eps=eps_value, min_samples=5)
+    labels = dbscan.fit_predict(nums)
+    noise_labels = np.where(labels == -1)[0]
+    non_noise_labels = np.where(labels != -1)[0]
+
+    trace1 = go.Scatter(
+                    x=df["magnitude"][noise_labels], # maybe these should be numpy arrays?
+                    y=df["depth"][noise_labels], 
+                    mode="markers",
+                    marker=dict(
+                        color='red',
+                        size=10,
+                        line=dict(width=1, color='black')
+                    ),
+                    name="Noise"
+    )
+    trace2 = go.Scatter(
+                    x=df["magnitude"][non_noise_labels], # maybe these should be numpy arrays?
+                    y=df["depth"][non_noise_labels], 
+                    mode="markers",
+                    marker=dict(
+                        color='blue',
+                        size=10,
+                        line=dict(width=1, color='black')
+                    ),
+                    name="Non-Noise"
+    )
+
+    layout = go.Layout(
+        title='Noise and Non-Noise',
+        xaxis=dict(title='Magnitude'),
+        yaxis=dict(title='Depth'),
+        showlegend=True
+    )
+    cluster_info = html.Div("")
+    fig = go.Figure(data=[trace1, trace2], layout=layout)
+    return fig, cluster_info
 
 # RUN IT
 if __name__ == '__main__':
