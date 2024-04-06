@@ -62,16 +62,17 @@ np.random.seed(0)
 
 # LAYOUT
 app.layout = html.Div(children=[
-    html.H1(children='Real-time Seismic Date'),
+    html.H1(children='Real-time Seismic Data Analysis'),
     html.Div(id='sql-data'),
     dcc.Interval(
         id='sql-update-interval',
         interval=30000,
         n_intervals=0
     ),
-    html.Div(children='''
-        This Dash app connects displays real-time seismic data.
-    '''),
+    html.Div([
+        html.P("Dashboard for visualization and analysis of seismic data."),
+        html.A('Overview and source code', href='https://github.com/Andre053/Seismic-Real-time-Data-Analysis', target='_blank')
+    ]),
     html.H4("Choose Timeframe"),
     dcc.DatePickerRange(
         id='date-picker-range',
