@@ -70,17 +70,15 @@ app.layout = html.Div(children=[
         n_intervals=0
     ),
     html.Div([
-        html.P("Dashboard for visualization and analysis of seismic data."),
+        html.P("Dashboard for visualization and analysis of seismic data. Collection of data started April 7th, 2024."),
         html.A('Overview and source code', href='https://github.com/Andre053/Seismic-Real-time-Data-Analysis', target='_blank')
     ]),
     html.H4("Choose Timeframe"),
     dcc.DatePickerRange(
         id='date-picker-range',
-        min_date_allowed=datetime.date(2024, 1, 1),
-        max_date_allowed=datetime.date.today(),
         initial_visible_month=datetime.date.today(),
-        start_date=datetime.date(2024, 4, 1),
-        end_date=datetime.date.today()
+        start_date=datetime.date(2000, 1, 1),
+        end_date=None
     ),
     html.H4('Overview'),
     html.Div(
