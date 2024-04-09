@@ -86,7 +86,7 @@ app.layout = html.Div(children=[
         style={'width': '250px'}
     ),
     html.H4('Event Counts over Time', style={'margin-bottom': '5px'}),
-    dcc.Graph(id='events-over-time', style={'margin-top': '-10px'}),
+    dcc.Graph(id='events-over-time', style={'margin-top': '5px'}),
     html.H2('Explore the Data'),
     dcc.Graph(
         id='world-map',
