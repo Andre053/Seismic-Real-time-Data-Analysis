@@ -66,11 +66,11 @@ app.layout = html.Div(children=[
     html.Div(id='sql-data'),
     dcc.Interval(
         id='sql-update-interval',
-        interval=30000,
+        interval=3600000,
         n_intervals=0
     ),
     html.Div([
-        html.P("Dashboard for visualization and analysis of seismic data. Collection of data started April 7th, 2024."),
+        html.P("Dashboard for visualization and analysis of seismic data. Collection of data started April 7th, 2024. Ingestion dropped on April 11th and was restarted. Ingestion paused April 14th to strategize lowering RDS usage."),
         html.A('Overview and source code', href='https://github.com/Andre053/Seismic-Real-time-Data-Analysis', target='_blank')
     ]),
     html.H4("Choose Timeframe"),
